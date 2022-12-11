@@ -1,8 +1,9 @@
-use std::error::Error;
+use anyhow::Error;
 
-fn main() -> Result<(), Box<dyn Error>> {
-	let sdl_ctx = sdl2::init()?;
-	let sdl_video = sdl_ctx.video()?;
+
+fn main() -> anyhow::Result<()> {
+	let sdl_ctx = sdl2::init().map_err(Error::msg)?;
+	let sdl_video = sdl_ctx.video().map_err(Error::msg)?;
 
 	let gl_attr = sdl_video.gl_attr();
 	gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
@@ -21,10 +22,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 		.opengl()
 		.build()?;
 
-	let gl_ctx = window.gl_create_context()?;
-	window.gl_make_current(&gl_ctx)?;
+	let gl_ctx = window.gl_create_context().map_err(Error::msg)?;
+	window.gl_make_current(&gl_ctx).map_err(Error::msg)?;
 
-	sdl_video.gl_set_swap_interval(sdl2::video::SwapInterval::VSync)?;
+	sdl_video.gl_set_swap_interval(sdl2::video::SwapInterval::VSync)
+		.map_err(Error::msg)?;
 
 	gl::load_with(|s| sdl_video.gl_get_proc_address(s) as *const _);
 
@@ -56,8 +58,54 @@ fn main() -> Result<(), Box<dyn Error>> {
 	}
 
 
+	// Create a shader program.
+	let main_shader = unsafe {
+		use std::ffi::CString;
 
-	let mut event_pump = sdl_ctx.event_pump()?;
+		let sources = [
+			(gl::VERTEX_SHADER, include_str!("shaders/vert.glsl")),
+			(gl::FRAGMENT_SHADER, include_str!("shaders/frag.glsl")),
+		];
+
+		let program = gl::CreateProgram();
+
+		for (ty, src) in sources {
+			let src_c = CString::new(src)?;
+
+			let shader = gl::CreateShader(ty);
+			gl::ShaderSource(shader, 1, &src_c.as_ptr(), std::ptr::null());
+			gl::CompileShader(shader);
+
+			// This will leak the program on error but we don't care because
+			// we're dying immediately anyway.
+			check_shader_status(shader)?;
+
+			gl::AttachShader(program, shader);
+
+			// Calling glDeleteShader here will not delete it immediately, but will defer its
+			// deletion until the program it is linked to is deleted.
+			gl::DeleteShader(shader);
+		}
+
+		gl::LinkProgram(program);
+
+		check_program_status(program)?;
+
+		program
+	};
+
+
+	// Create a VAO to allow us to render.
+	// One is required for any drawcall that reads vertex array state (including enablement state).
+	let vao = unsafe {
+		let mut handle = 0;
+		gl::CreateVertexArrays(1, &mut handle);
+		handle
+	};
+
+
+	let mut event_pump = sdl_ctx.event_pump()
+		.map_err(Error::msg)?;
 
 	'main: loop {
 		use sdl2::event::{Event, WindowEvent};
@@ -80,6 +128,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 		unsafe {
 			gl::ClearColor(0.1, 0.1, 0.1, 1.0);
 			gl::Clear(gl::COLOR_BUFFER_BIT|gl::DEPTH_BUFFER_BIT);
+
+			gl::BindVertexArray(vao);
+			gl::UseProgram(main_shader);
+			gl::DrawArrays(gl::TRIANGLES, 0, 6);
 		}
 
 
@@ -139,4 +191,59 @@ extern "system" fn gl_message_callback(source: u32, ty: u32, _id: u32, severity:
 		gl::DEBUG_SEVERITY_HIGH | gl::DEBUG_SEVERITY_MEDIUM => panic!("GL ERROR!"),
 		_ => {}
 	}
+}
+
+
+
+
+
+fn check_shader_status(shader_handle: u32) -> anyhow::Result<()> {
+	unsafe {
+		let mut status = 0;
+		gl::GetShaderiv(shader_handle, gl::COMPILE_STATUS, &mut status);
+
+		if status == 0 {
+			let mut length = 0;
+			gl::GetShaderiv(shader_handle, gl::INFO_LOG_LENGTH, &mut length);
+
+			let mut buffer = vec![0u8; length as usize];
+			gl::GetShaderInfoLog(
+				shader_handle,
+				length,
+				std::ptr::null_mut(),
+				buffer.as_mut_ptr() as *mut _
+			);
+
+			let error_msg = String::from_utf8_lossy(&buffer[..buffer.len()-1]);
+			anyhow::bail!("Shader failed to compile: {error_msg}");
+		}	
+	}
+
+	Ok(())
+}
+
+
+fn check_program_status(program_handle: u32) -> anyhow::Result<()> {
+	unsafe {
+		let mut status = 0;
+		gl::GetProgramiv(program_handle, gl::LINK_STATUS, &mut status);
+
+		if status == 0 {
+			let mut length = 0;
+			gl::GetProgramiv(program_handle, gl::INFO_LOG_LENGTH, &mut length);
+
+			let mut buffer = vec![0u8; length as usize];
+			gl::GetProgramInfoLog(
+				program_handle,
+				length,
+				std::ptr::null_mut(),
+				buffer.as_mut_ptr() as *mut _
+			);
+
+			let error_msg = String::from_utf8_lossy(&buffer[..buffer.len()-1]);
+			anyhow::bail!("Program failed to link: {error_msg}");
+		}	
+	}
+
+	Ok(())
 }
