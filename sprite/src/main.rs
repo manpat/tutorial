@@ -122,7 +122,7 @@ fn main() -> anyhow::Result<()> {
 	};
 
 
-	// Load our sprite atlas (containing a single sprite).
+	// Load our sprite atlas.
 	let texture = load_texture("sprite/assets/atlas.png")?;
 
 
