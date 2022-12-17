@@ -7,4 +7,9 @@ edition = "2021"
 anyhow = "1.0.66"
 gl = "0.14"
 glam = "0.22"
-sdl2 = "0.35"
+sdl2 = {version = "0.35", features = ["bundled", "static-link"]}
+
+[dependencies.image]
+version = "0.24"
+features = ["png"]
+default-features = false
