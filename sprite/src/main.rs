@@ -1,5 +1,5 @@
 use anyhow::Error;
-use glam::{Vec2, Vec3, Vec3A, Vec4, Mat4, Mat3A, Vec3Swizzles};
+use glam::{Vec2, Vec3, Mat3, Vec4, Mat4, Mat3A, IVec2};
 
 
 fn main() -> anyhow::Result<()> {
@@ -98,24 +98,8 @@ fn main() -> anyhow::Result<()> {
 	};
 
 
-	// Create a VAO to allow us to render.
-	// One is required for any drawcall that reads vertex array state (including enablement state).
-	let vao = unsafe {
-		let mut handle = 0;
-		gl::CreateVertexArrays(1, &mut handle);
-		handle
-	};
-
-
 	// Create a buffer to house our uniforms.
 	let uniform_buffer = unsafe {
-		let mut handle = 0;
-		gl::CreateBuffers(1, &mut handle);
-		handle
-	};
-
-	// Create a buffer to house our per-sprite data.
-	let sprite_buffer = unsafe {
 		let mut handle = 0;
 		gl::CreateBuffers(1, &mut handle);
 		handle
@@ -124,6 +108,8 @@ fn main() -> anyhow::Result<()> {
 
 	// Load our sprite atlas.
 	let texture = load_texture("sprite/assets/atlas.png")?;
+
+	let mut sprite_renderer = SpriteRenderer::new(IVec2::splat(128));
 
 
 	let mut event_pump = sdl_ctx.event_pump()
@@ -152,58 +138,58 @@ fn main() -> anyhow::Result<()> {
 		}
 
 		let view_matrix = Mat4::from_translation(-Vec3::Z * 3.0)
-						* Mat4::from_rotation_y(time*0.6);
+			* Mat4::from_rotation_y(time*0.6);
 
-		let sprites = [
-			SpriteUniform {
-				transform: Mat3A::from_cols(Vec3A::X, Vec3A::Y, Vec3A::ZERO),
-				color: Vec4::new(1.0, 1.0, 1.0, (time*0.8).cos() * 0.4 + 0.6),
-				uv_scale: Vec2::splat(0.5),
-				uv_offset: Vec2::ZERO,
-			},
+		// let sprites = [
+		// 	SpriteUniform {
+		// 		transform: Mat3A::from_cols(Vec3A::X, Vec3A::Y, Vec3A::ZERO),
+		// 		color: Vec4::new(1.0, 1.0, 1.0, (time*0.8).cos() * 0.4 + 0.6),
+		// 		uv_scale: Vec2::splat(0.5),
+		// 		uv_offset: Vec2::ZERO,
+		// 	},
 
-			SpriteUniform {
-				transform: Mat3A::from_cols(0.3 * Vec3A::Y, -0.4 * Vec3A::X, Vec3A::new(0.7, 0.4, 0.2)),
-				color: Vec4::new(1.0, 0.5, 1.0, 0.5),
-				uv_scale: Vec2::splat(0.5),
-				uv_offset: Vec2::ZERO,
-			},
+		// 	SpriteUniform {
+		// 		transform: Mat3A::from_cols(0.3 * Vec3A::Y, -0.4 * Vec3A::X, Vec3A::new(0.7, 0.4, 0.2)),
+		// 		color: Vec4::new(1.0, 0.5, 1.0, 0.5),
+		// 		uv_scale: Vec2::splat(0.5),
+		// 		uv_offset: Vec2::ZERO,
+		// 	},
 
-			SpriteUniform {
-				transform: {
-					let right = 0.3 * Vec2::from((-time).sin_cos());
-					let up = right.perp();
-					let offset = 0.8 * Vec2::from((0.7 * time).sin_cos());
+		// 	SpriteUniform {
+		// 		transform: {
+		// 			let right = 0.3 * Vec2::from((-time).sin_cos());
+		// 			let up = right.perp();
+		// 			let offset = 0.8 * Vec2::from((0.7 * time).sin_cos());
 
-					Mat3A::from_cols(right.extend(0.0).into(), up.extend(0.0).into(), offset.extend(-0.6).into())
-				},
-				color: Vec4::new(1.0, 1.0, 0.5, 1.0),
-				uv_scale: Vec2::splat(0.5),
-				uv_offset: Vec2::new(0.5, 0.0),
-			},
+		// 			Mat3A::from_cols(right.extend(0.0).into(), up.extend(0.0).into(), offset.extend(-0.6).into())
+		// 		},
+		// 		color: Vec4::new(1.0, 1.0, 0.5, 1.0),
+		// 		uv_scale: Vec2::splat(0.5),
+		// 		uv_offset: Vec2::new(0.5, 0.0),
+		// 	},
 
-			SpriteUniform {
-				transform: {
-					let inv_view = view_matrix.inverse();
+		// 	SpriteUniform {
+		// 		transform: {
+		// 			let inv_view = view_matrix.inverse();
 
-					let right = 0.3 * inv_view.x_axis;
-					let up = 0.3 * inv_view.y_axis;
-					let offset = Vec3::new(2.0, 1.0, 2.0) * Vec2::from((0.6 * time).sin_cos()).extend(0.5).zyx();
+		// 			let right = 0.3 * inv_view.x_axis;
+		// 			let up = 0.3 * inv_view.y_axis;
+		// 			let offset = Vec3::new(2.0, 1.0, 2.0) * Vec2::from((0.6 * time).sin_cos()).extend(0.5).zyx();
 
-					Mat3A::from_cols(right.into(), up.into(), offset.into())
-				},
-				color: Vec4::new(0.5, 1.0, 0.5, 1.0),
-				uv_scale: Vec2::splat(0.5),
-				uv_offset: Vec2::new(0.5, 0.0),
-			},
+		// 			Mat3A::from_cols(right.into(), up.into(), offset.into())
+		// 		},
+		// 		color: Vec4::new(0.5, 1.0, 0.5, 1.0),
+		// 		uv_scale: Vec2::splat(0.5),
+		// 		uv_offset: Vec2::new(0.5, 0.0),
+		// 	},
 
-			SpriteUniform {
-				transform: Mat3A::from_cols(Vec3A::X, -Vec3A::Z, Vec3A::new(0.0, -1.0, 0.0)),
-				color: Vec4::new(0.5, 1.0, 1.0, 1.0),
-				uv_scale: Vec2::splat(0.5),
-				uv_offset: Vec2::new(0.5, 0.0),
-			},
-		];
+		// 	SpriteUniform {
+		// 		transform: Mat3A::from_cols(Vec3A::X, -Vec3A::Z, Vec3A::new(0.0, -1.0, 0.0)),
+		// 		color: Vec4::new(0.5, 1.0, 1.0, 1.0),
+		// 		uv_scale: Vec2::splat(0.5),
+		// 		uv_offset: Vec2::new(0.5, 0.0),
+		// 	},
+		// ];
 
 		// Update buffers
 		unsafe {
@@ -220,7 +206,6 @@ fn main() -> anyhow::Result<()> {
 			};
 
 			upload_buffer(uniform_buffer, &[uniforms], gl::STREAM_DRAW);
-			upload_buffer(sprite_buffer, &sprites, gl::STREAM_DRAW);
 		}
 
 
@@ -235,16 +220,21 @@ fn main() -> anyhow::Result<()> {
 			// Bind our uniform buffer to 0th ubo binding slot - matching the layout specified in vert.glsl
 			gl::BindBufferBase(gl::UNIFORM_BUFFER, 0, uniform_buffer);
 
-			// Bind our sprite buffer to 0th ssbo binding slot - matching the layout specified in vert.glsl
-			gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, 0, sprite_buffer);
-
 			// Bind our sprite atlas to 0th texture unit - matching the binding specified in frag.glsl
 			gl::BindTextureUnit(0, texture);
 
-			gl::BindVertexArray(vao);
 			gl::UseProgram(main_shader);
-			gl::DrawArrays(gl::TRIANGLES, 0, (sprites.len() * 6) as _);
 		}
+
+		let guy_sprite = Sprite::new(IVec2::new(0, 0), IVec2::splat(64));
+		let squiggle_sprite = Sprite::new(IVec2::new(64, 0), IVec2::splat(64));
+
+		let guy_sprite = Sprite { anchor_2x: IVec2::new(64, 0), .. guy_sprite };
+
+		sprite_renderer.quad_raw(&guy_sprite, &Mat3::from_cols(Vec3::X, Vec3::Y, -0.5 * Vec3::Y));
+		sprite_renderer.quad_raw(&squiggle_sprite, &Mat3::from_cols(Vec3::X, -Vec3::Z, -0.5 * Vec3::Y));
+
+		sprite_renderer.draw();
 
 
 		window.gl_swap_window();
@@ -390,17 +380,6 @@ struct Uniforms {
 }
 
 
-// NOTE: Must respect glsl std430 layout rules.
-#[repr(C)]
-#[derive(Copy, Clone)]
-struct SpriteUniform {
-	transform: Mat3A,
-	color: Vec4,
-	uv_scale: Vec2,
-	uv_offset: Vec2,
-}
-
-
 
 pub fn load_texture(path: impl AsRef<std::path::Path>) -> anyhow::Result<u32> {
 	let image = image::open(path)?.flipv().into_rgba8().into_flat_samples();
@@ -431,5 +410,151 @@ pub fn load_texture(path: impl AsRef<std::path::Path>) -> anyhow::Result<u32> {
 		gl::TextureParameteri(texture_handle, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
 
 		Ok(texture_handle)
+	}
+}
+
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct TexturedVertex {
+	position: Vec3,
+	uv: Vec2,
+}
+
+
+
+pub struct SpriteRenderer {
+	vertices: Vec<TexturedVertex>,
+	indices: Vec<u16>,
+
+	texture_size: IVec2,
+
+	vao: u32,
+	vertex_buffer: u32,
+	index_buffer: u32,
+}
+
+impl SpriteRenderer {
+	pub fn new(texture_size: IVec2) -> SpriteRenderer {
+		let mut vao = 0;
+		let mut vertex_buffer = 0;
+		let mut index_buffer = 0;
+
+		let vertex_stride = std::mem::size_of::<TexturedVertex>() as i32;
+		let vertex_bind_index = 0;
+
+		unsafe {
+			gl::CreateVertexArrays(1, &mut vao);
+			gl::CreateBuffers(1, &mut vertex_buffer);
+			gl::CreateBuffers(1, &mut index_buffer);
+
+			// Bind vertex buffer to vao and describe which attributes should pull from it
+			gl::VertexArrayVertexBuffer(vao, vertex_bind_index, vertex_buffer, 0, vertex_stride);
+			gl::VertexArrayAttribBinding(vao, 0 /* attribute index */, vertex_bind_index);
+			gl::VertexArrayAttribBinding(vao, 1 /* attribute index */, vertex_bind_index);
+
+			// Bind index buffer to vao
+			gl::VertexArrayElementBuffer(vao, index_buffer);
+
+			// Describe layout of attributes in vertex buffer
+			gl::VertexArrayAttribFormat(
+				vao,
+				0, // attribute index
+				3, // num elements
+				gl::FLOAT,
+				gl::FALSE, // normalised?
+				0, // offset in bytes into struct
+			);
+			gl::VertexArrayAttribFormat(
+				vao,
+				1, // attribute index
+				2, // num elements
+				gl::FLOAT,
+				gl::FALSE, // normalised?
+				std::mem::size_of::<Vec3>() as _, // offset in bytes into struct
+			);
+
+			// Enable pulling vertex attributes from vertex buffer
+			gl::EnableVertexArrayAttrib(vao, 0);
+			gl::EnableVertexArrayAttrib(vao, 1);
+		}
+
+		SpriteRenderer {
+			vertices: Vec::new(),
+			indices: Vec::new(),
+			texture_size,
+			vao, vertex_buffer, index_buffer,
+		}
+	}
+
+	pub fn draw(&mut self) {
+		let element_count = self.indices.len() as i32;
+		let draw_offset = std::ptr::null();
+
+		// Update buffers
+		unsafe {
+			upload_buffer(self.vertex_buffer, &self.vertices, gl::STREAM_DRAW);
+			upload_buffer(self.index_buffer, &self.indices, gl::STREAM_DRAW);
+		}
+
+		// Clear for next frame.
+		self.vertices.clear();
+		self.indices.clear();
+
+		// Draw
+		unsafe {
+			gl::BindVertexArray(self.vao);
+			gl::DrawElements(gl::TRIANGLES, element_count, gl::UNSIGNED_SHORT, draw_offset);
+		}
+	}
+
+	pub fn quad_raw(&mut self, sprite: &Sprite, transform: &Mat3) {
+		let positions = [
+			Vec2::new(0.0,0.0),
+			Vec2::new(0.0,1.0),
+			Vec2::new(1.0,1.0),
+			Vec2::new(1.0,0.0),
+		];
+
+		let vertex_start = self.vertices.len() as u16;
+		let uv_scale = sprite.size.as_vec2() / self.texture_size.as_vec2();
+		let uv_offset = sprite.start.as_vec2() / self.texture_size.as_vec2();
+		let anchor_offset = sprite.anchor_2x.as_vec2() / sprite.size.as_vec2() / 2.0;
+
+		let new_vertices = positions.into_iter()
+			.map(|pos2| {
+				let position = *transform * (pos2 - anchor_offset).extend(1.0);
+				let uv = pos2 * uv_scale + uv_offset;
+
+				TexturedVertex {position, uv}
+			});
+
+		let new_indices = [
+			vertex_start + 0,
+			vertex_start + 1,
+			vertex_start + 2,
+			vertex_start + 0,
+			vertex_start + 2,
+			vertex_start + 3,
+		];
+
+		self.vertices.extend(new_vertices);
+		self.indices.extend(new_indices);
+	}
+}
+
+pub struct Sprite {
+	pub start: IVec2,
+	pub size: IVec2,
+	pub anchor_2x: IVec2,
+}
+
+impl Sprite {
+	pub const fn new(start: IVec2, size: IVec2) -> Sprite {
+		Sprite {
+			start,
+			size,
+			anchor_2x: size,
+		}
 	}
 }

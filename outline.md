@@ -22,6 +22,7 @@
 	- Draw square without vertex arrays
 
 - Buffers
+	- DSA
 	- Projection
 	- Basic Mesh building
 		- Discuss cost of uploading every frame vs simplicity/flexibility
