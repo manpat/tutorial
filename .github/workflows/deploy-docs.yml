@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   docs:
-    name: Build and deploy docs
+    name: Build and deploy book
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -37,9 +37,6 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    
-    - name: Setup Pages
-      uses: actions/configure-pages@v1
 
     - name: Setup Toolchain
       uses: actions-rs/toolchain@v1
@@ -55,13 +52,15 @@ jobs:
         echo "$(pwd)/bin" >> $GITHUB_PATH
         
     - name: Build book
-      run: |
-        mdbook build -d build-output book
+      run: mdbook build -d build-output book
+    
+    - name: Setup Pages
+      uses: actions/configure-pages@v2
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v1
       with:
-        path: 'build-output'
+        path: 'book/build-output'
 
     - name: Deploy to GitHub Pages
       id: deployment
