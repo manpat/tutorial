@@ -1,0 +1,6 @@
+[book]
+authors = ["Patrick Monaghan"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Sprite Rendering with Modern OpenGL"
