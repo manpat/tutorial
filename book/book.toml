@@ -4,3 +4,7 @@ language = "en"
 multilingual = false
 src = "src"
 title = "Sprite Rendering with Modern OpenGL"
+
+
+[build]
+build-dir = "build-output"
