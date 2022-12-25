@@ -31,27 +31,7 @@ Try to follow if you can, but if you don't understand it right away don't worry.
 Lets start at the start of the pipeline, the vertex shader - a small program that is run for each vertex we want to render. We have some creative liberty as to what constitutes a 'vertex' here, but for now lets just start with code:
 
 ```c
-#version 450
-
-// Our vertex positions - in clip space.
-const vec2[4] g_positions = {
-	{-0.5,-0.5},
-	{ 0.5,-0.5},
-	{ 0.5, 0.5},
-	{-0.5, 0.5},
-};
-
-// Indices into g_positions. Each three indices defines a triangle
-// in counter-clockwise winding order.
-const uint g_indices[6] = {0, 1, 2, 0, 2, 3};
-
-// The entry point for our shader.
-// It will be called once for every vertex.
-void main() {
-	const uint position_index = g_indices[gl_VertexID];
-	const vec2 position = g_positions[position_index];
-	gl_Position = vec4(position, 0.0, 1.0);
-}
+{{#include ../../examples/ch01/src/shaders/vert.glsl}}
 ```
 
 This shader will generate the vertices we need to render two triangles.
@@ -69,14 +49,7 @@ Next the fragment shader - a program that is run for each [fragment](https://www
 We will be using this shader for now:
 
 ```c
-#version 450
-
-out vec4 o_color;
-
-void main() {
-	o_color = vec4(1.0, 0.0, 1.0, 1.0);
-}
-
+{{#include ../../examples/ch01/src/shaders/frag.glsl}}
 ```
 
 This shader will write magenta to the backbuffer for each fragment generated during rasterisation - or put more simply, our triangles will be pink.
@@ -109,20 +82,19 @@ Though it is worth noting that once linked, shader objects are no longer require
 It can be detached from the program ([`glDetachShader`](https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDetachShader.xhtml)) and optionally deleted ([`glDeleteShader`](https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDeleteShader.xhtml)).
 
 Enough summarising, time for code:
-<!-- TODO: Need a minimal repro specifically for this chapter instead of referring to sprite crate -->
 ```rs
-{{#include ../../sprite/src/main.rs:compile_shader}}
+{{#include ../../examples/ch01/src/main.rs:compile_shader}}
 ```
 This snippet represents step one of the above process: compiling and error checking an individual shader.
 
-Next we can create a program and start linking like such:
+Next we can create a program and start linking:
 ```rs
-{{#include ../../sprite/src/main.rs:full_shader_process}}
+{{#include ../../examples/ch01/src/main.rs:create_shader_program}}
 ```
 
 check_program_status in the above snippet is very similar to check_shader_status barre some different names
 ```rs
-{{#include ../../sprite/src/main.rs:check_program_status}}
+{{#include ../../examples/ch01/src/main.rs:check_program_status}}
 ```
 
 Once this is done you should have a program ready to render with. We only need to do a couple more things before we can get something on screen.
@@ -132,14 +104,19 @@ Once this is done you should have a program ready to render with. We only need t
 
 Rendering our generated, magenta rectangle _should_ now just be a matter of binding our program and emitting the appropriate drawcall. That would look something like this:
 ```rs
-unsafe {
-	let num_vertices = 6; // This corresponds to the number of indices in our vertex shader.
-	gl::UseProgram(main_shader);
-	gl::DrawArrays(gl::TRIANGLES, 0, num_vertices);
-}
+{{#include ../../examples/ch01/src/main.rs:final_render}}
 ```
 
 However, if you were to try this now (and you've set up debug callbacks properly) you should get OpenGL complaining at you and refusing to draw anything.
+
+Perhaps it will look something like this:
+```
+GL ERROR!
+Source:   api
+Severity: high
+Type:     error
+Message: GL_INVALID_OPERATION in glDrawArrays
+```
 
 Why is that?
 
@@ -153,15 +130,15 @@ This last part is why we need a VAO. We don't have any buffers to draw data from
 
 Lucky for us this is easy to communicate, as this is the default state of a new VAO.
 ```rs
-unsafe {
-	let mut vao = 0;
-	gl::CreateVertexArrays(1, &mut vao);
-	gl::BindVertexArray(vao);
-}
+{{#include ../../examples/ch01/src/main.rs:create_dummy_vao}}
 ```
 The above snippet only needs to run once during setup, and that should be enough to allow us to draw.
 Normally you'd want to bind your vao just before you draw, but since we only have one its fine to just bind once at startup.
 This code is only temporary so don't worry too much about it just yet.
+
+So if you try calling glDrawArrays one more time, you _should_ be presented with something like this:
+
+![A magenta rectangle in the centre of a grey window](ch01/pink_rectangle.png)
 
 
 ## More Resources
