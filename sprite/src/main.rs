@@ -62,40 +62,32 @@ fn main() -> anyhow::Result<()> {
 
 
 	// Create a shader program.
+	// ANCHOR: full_shader_process
 	let main_shader = unsafe {
-		use std::ffi::CString;
-
-		let sources = [
-			(gl::VERTEX_SHADER, include_str!("shaders/vert.glsl")),
-			(gl::FRAGMENT_SHADER, include_str!("shaders/frag.glsl")),
+		let shaders = [
+			compile_shader(gl::VERTEX_SHADER, include_str!("shaders/vert.glsl"))?,
+			compile_shader(gl::FRAGMENT_SHADER, include_str!("shaders/frag.glsl"))?,
 		];
 
 		let program = gl::CreateProgram();
-
-		for (ty, src) in sources {
-			let src_c = CString::new(src)?;
-
-			let shader = gl::CreateShader(ty);
-			gl::ShaderSource(shader, 1, &src_c.as_ptr(), std::ptr::null());
-			gl::CompileShader(shader);
-
-			// This will leak the program on error but we don't care because
-			// we're dying immediately anyway.
-			check_shader_status(shader)?;
-
+		for shader in shaders {
 			gl::AttachShader(program, shader);
-
-			// Calling glDeleteShader here will not delete it immediately, but will defer its
-			// deletion until the program it is linked to is deleted.
-			gl::DeleteShader(shader);
 		}
 
 		gl::LinkProgram(program);
+
+		// Clean up the shaders we compiled above since we no longer need
+		// them after linking, even if linking failed.
+		for shader in shaders {
+			gl::DetachShader(program, shader);
+			gl::DeleteShader(shader);
+		}
 
 		check_program_status(program)?;
 
 		program
 	};
+	// ANCHOR_END: full_shader_process
 
 
 	// Create a buffer to house our uniforms.
@@ -296,7 +288,23 @@ extern "system" fn gl_message_callback(source: u32, ty: u32, _id: u32, severity:
 }
 
 
+// ANCHOR: compile_shader
+fn compile_shader(ty: u32, src: &str) -> anyhow::Result<u32> {
+	let src_c = std::ffi::CString::new(src)?;
 
+	unsafe {
+		let shader = gl::CreateShader(ty);
+		gl::ShaderSource(shader, 1, &src_c.as_ptr(), std::ptr::null());
+		gl::CompileShader(shader);
+
+		// NOTE: on error, this will technically leak `shader`.
+		// But we don't care for now since we're planning to
+		// bail immediately on error
+		check_shader_status(shader)?;
+
+		Ok(shader)
+	}
+}
 
 
 fn check_shader_status(shader_handle: u32) -> anyhow::Result<()> {
@@ -323,8 +331,10 @@ fn check_shader_status(shader_handle: u32) -> anyhow::Result<()> {
 
 	Ok(())
 }
+// ANCHOR_END: compile_shader
 
 
+// ANCHOR: check_program_status
 fn check_program_status(program_handle: u32) -> anyhow::Result<()> {
 	unsafe {
 		let mut status = 0;
@@ -349,6 +359,7 @@ fn check_program_status(program_handle: u32) -> anyhow::Result<()> {
 
 	Ok(())
 }
+// ANCHOR_END: check_program_status
 
 
 
