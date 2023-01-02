@@ -2,7 +2,7 @@ use framework::prelude::*;
 
 
 fn main() {
-	framework::run(Example::new);
+	framework::run("ch01 - speedrun a rectangle", Example::new);
 }
 
 

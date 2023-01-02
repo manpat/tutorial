@@ -8,10 +8,10 @@ pub trait App {
 
 
 
-pub fn run<A>(make_app: impl FnOnce() -> anyhow::Result<A>)
+pub fn run<A>(name: &str, make_app: impl FnOnce() -> anyhow::Result<A>)
 	where A: App
 {
-	let mut state = crate::state::init().expect("init failed");
+	let mut state = crate::state::init(name).expect("init failed");
 	let mut app = make_app().unwrap();
 
 	'main: loop {

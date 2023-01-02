@@ -20,7 +20,7 @@ impl State {
 }
 
 
-pub(crate) fn init() -> anyhow::Result<State> {
+pub(crate) fn init(name: &str) -> anyhow::Result<State> {
 	use anyhow::Error;
 
 	// Initial setup of sdl2
@@ -39,7 +39,7 @@ pub(crate) fn init() -> anyhow::Result<State> {
 	gl_attr.set_framebuffer_srgb_compatible(true);
 	gl_attr.set_stencil_size(8);
 
-	let window = sdl_video.window("Sprite", 1366, 768)
+	let window = sdl_video.window(name, 1366, 768)
 		.position_centered()
 		.resizable()
 		.opengl()
