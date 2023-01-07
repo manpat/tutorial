@@ -4,7 +4,7 @@
 
 - [Getting Started](ch00_getting_started.md)
 
-## Basic Rendering
+# Basic Rendering
 
 - [Speed Run A Rectangle](ch01_speedrun_rendering.md)
 - [Texturing](ch02_texturing.md)

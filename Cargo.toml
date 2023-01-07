@@ -1,3 +1,9 @@
 [workspace]
-members = ["sprite", "examples/framework", "examples/ch01"]
-default-members = ["examples/ch01"]
+members = [
+	"sprite",
+	"examples/framework",
+	"examples/ch00",
+	"examples/ch01",
+]
+
+default-members = ["examples/ch00"]

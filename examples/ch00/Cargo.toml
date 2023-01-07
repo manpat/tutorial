@@ -1,0 +1,11 @@
+[package]
+name = "ch00"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gl = "0.14"
+
+[dependencies.sdl2]
+version = "0.35"
+features = ["bundled", "static-link"]
