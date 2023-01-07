@@ -12,3 +12,9 @@ There are some things to keep in mind when reading this tutorial:
 As always it is good practice to draw from many sources of information rather than relying on just one.
 
 - **There is no one way to do things.** The approaches I present here are just patterns I have landed on in my personal work and that I think are useful, but for any problem there are many solutions with different pros and cons, and I encourage you to explore them.
+
+
+## Code snippets
+
+Each rust snippet in this tutorial is included from a compiling example. You can see the full context of a snippet by pressing this button:
+![The show hidden lines button in the top right corner of a code snippet](intro/view_src.png)

@@ -82,19 +82,19 @@ Though it is worth noting that once linked, shader objects are no longer require
 It can be detached from the program ([`glDetachShader`](https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDetachShader.xhtml)) and optionally deleted ([`glDeleteShader`](https://registry.khronos.org/OpenGL-Refpages/gl4/html/glDeleteShader.xhtml)).
 
 Enough summarising, time for code:
-```rs
-{{#include ../../examples/ch01/src/main.rs:compile_shader}}
+```rust,no_run
+{{#rustdoc_include ../../examples/ch01/src/main.rs:compile_shader}}
 ```
 This snippet represents step one of the above process: compiling and error checking an individual shader.
 
 Next we can create a program and start linking:
-```rs
-{{#include ../../examples/ch01/src/main.rs:create_shader_program}}
+```rust,no_run
+{{#rustdoc_include ../../examples/ch01/src/main.rs:create_shader_program}}
 ```
 
 check_program_status in the above snippet is very similar to check_shader_status barre some different names
-```rs
-{{#include ../../examples/ch01/src/main.rs:check_program_status}}
+```rust,no_run
+{{#rustdoc_include ../../examples/ch01/src/main.rs:check_program_status}}
 ```
 
 Once this is done you should have a program ready to render with. We only need to do a couple more things before we can get something on screen.
@@ -103,8 +103,8 @@ Once this is done you should have a program ready to render with. We only need t
 ## Finally Rendering?
 
 Rendering our generated, magenta rectangle _should_ now just be a matter of binding our program and emitting the appropriate drawcall. That would look something like this:
-```rs
-{{#include ../../examples/ch01/src/main.rs:final_render}}
+```rust,no_run
+{{#rustdoc_include ../../examples/ch01/src/main.rs:final_render}}
 ```
 
 However, if you were to try this now (and you've set up debug callbacks properly) you should get OpenGL complaining at you and refusing to draw anything.
@@ -129,8 +129,8 @@ A VAO is an object that more or less describes how to feed vertices to the GPU. 
 This last part is why we need a VAO. We don't have any buffers to draw data from, our vertex shader doesn't have any attributes to feed. _BUT_ `glDrawArrays` _still_ needs to query the VAO to determine _if_ there are any buffers it needs to read. In effect, we just need a VAO that says "no, you don't need to pull data from anywhere, just draw".
 
 Lucky for us this is easy to communicate, as this is the default state of a new VAO.
-```rs
-{{#include ../../examples/ch01/src/main.rs:create_dummy_vao}}
+```rust,no_run
+{{#rustdoc_include ../../examples/ch01/src/main.rs:create_dummy_vao}}
 ```
 The above snippet only needs to run once during setup, and that should be enough to allow us to draw.
 Normally you'd want to bind your vao just before you draw, but since we only have one its fine to just bind once at startup.

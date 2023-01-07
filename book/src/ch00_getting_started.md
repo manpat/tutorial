@@ -29,8 +29,8 @@ The version is not super important - `0.35` is just the latest minor version ava
 ## Create a window
 
 Next its time to actually use [`sdl2`]. Add the following to your `main.rs`:
-```rs
-{{#include ../../examples/ch00/src/main.rs:just_window}}
+```rust,no_run
+{{#rustdoc_include ../../examples/ch00/src/step_0.rs:just_window}}
 ```
 If everything is set up correctly, then when you build and run this you should see a window appear for three seconds.
 
@@ -45,28 +45,31 @@ Next we have to create an OpenGL context. This happens in a few parts:
 
 ### Describing the context
 
-```rs
-{{#include ../../examples/ch00/src/main.rs:describe_context}}
+```rust,no_run
+{{#rustdoc_include ../../examples/ch00/src/step_1.rs:describe_context}}
 ```
 
 ### Creating the context
-```rs
-{{#include ../../examples/ch00/src/main.rs:create_context_and_make_current}}
+```rust,no_run
+{{#rustdoc_include ../../examples/ch00/src/step_1.rs:create_context_and_make_current}}
 ```
 
 ### Loading functions
-```rs
-{{#include ../../examples/ch00/src/main.rs:load_gl_funcs}}
+```rust,no_run
+{{#rustdoc_include ../../examples/ch00/src/step_1.rs:load_gl_funcs}}
 ```
 
 ### Making sure it works
-```rs
-{{#include ../../examples/ch00/src/main.rs:make_sure_it_works}}
+```rust,no_run
+{{#rustdoc_include ../../examples/ch00/src/step_1.rs:make_sure_it_works}}
 ```
 
 ## Debug contexts
 
 
+
+
+## More resources
 
 
 
